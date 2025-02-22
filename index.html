@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<title>视频会议</title>
+	<link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			font-family: Arial, sans-serif;
+			background: #f0f0f0;
+			overflow: hidden;
+		}
+		.container {
+			display: flex;
+			height: 100vh;
+			padding: 0;
+			background: #1a1a1a;
+		}
+		.main-content {
+			flex: 1;
+			min-width: 600px;
+			display: flex;
+			flex-direction: column;
+			padding: 10px;
+		}
+		.join-form {
+			background: white;
+			padding: 20px;
+			border-radius: 8px;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+			margin: 10px;
+		}
+		.video-grid {
+			display: grid;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 10px;
+			margin-bottom: 10px;
+			flex: 1;
+			height: calc(100vh - 80px);
+		}
+		.video-container {
+			background: black;
+			border-radius: 8px;
+			overflow: hidden;
+			position: relative;
+			height: 100%;
+		}
+		.video-label {
+			position: absolute;
+			bottom: 10px;
+			left: 10px;
+			color: white;
+			background: rgba(0,0,0,0.5);
+			padding: 5px 10px;
+			border-radius: 4px;
+			font-size: 14px;
+		}
+		video {
+			width: 100%;
+			height: 100%;
+			object-fit: contain;
+		}
+		.controls {
+			display: flex;
+			gap: 10px;
+			justify-content: center;
+			align-items: center;
+			padding: 15px;
+			background: white;
+			border-radius: 8px;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+			margin: 10px;
+		}
+		button {
+			padding: 10px 20px;
+			border: none;
+			border-radius: 4px;
+			background: #9e9e9e;
+			color: white;
+			cursor: pointer;
+			transition: all 0.3s;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+		button[onclick="joinRoom()"] {
+			background: #2196F3;
+		}
+		button[onclick="joinRoom()"]:hover {
+			background: #1976D2;
+		}
+		button.active {
+			background: #4CAF50 !important;
+		}
+		button.inactive {
+			background: #9e9e9e !important;
+		}
+		button:disabled {
+			background: #ccc !important;
+			cursor: not-allowed;
+		}
+		button i {
+			font-size: 1.1em;
+		}
+		input {
+			padding: 10px;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+			width: 200px;
+		}
+		.room-info {
+			position: absolute;
+			top: 10px;
+			left: 10px;
+			background: rgba(255, 255, 255, 0.9);
+			padding: 5px 10px;
+			border-radius: 4px;
+			font-size: 14px;
+			z-index: 1;
+		}
+		.fullscreen-btn {
+			position: absolute;
+			top: 10px;
+			right: 10px;
+			background: rgba(0, 0, 0, 0.5);
+			border: none;
+			border-radius: 4px;
+			color: white;
+			padding: 8px;
+			cursor: pointer;
+			transition: background 0.3s;
+		}
+		.fullscreen-btn:hover {
+			background: rgba(0, 0, 0, 0.7);
+		}
+		.fullscreen-icon {
+			font-size: 18px;
+		}
+		.chat-container {
+			width: 300px;
+			min-width: 320px;
+			max-width: 50vw;
+			background: #ffffff;
+			display: flex;
+			flex-direction: column;
+			border-left: 1px solid #e0e0e0;
+			overflow: hidden;
+		}
+		.chat-messages {
+			flex: 1;
+			overflow-y: auto;
+			padding: 15px;
+			background: #f8f9fa;
+		}
+		.chat-input-area {
+			padding: 10px;
+			background: white;
+			border-top: 1px solid #e0e0e0;
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+			width: auto;
+			box-sizing: border-box;
+		}
+		.chat-input-area textarea {
+			flex: 1;
+			width: 100%;
+			min-height: 40px;
+			max-height: 150px;
+			padding: 10px;
+			border: 1px solid #ddd;
+			border-radius: 8px;
+			outline: none;
+			resize: vertical;
+			font-family: inherit;
+			font-size: inherit;
+			line-height: 1.4;
+			transition: border-color 0.3s;
+			box-sizing: border-box;
+			margin-bottom: 4px;
+		}
+		.chat-input-area textarea:focus {
+			border-color: #007bff;
+		}
+		.chat-buttons {
+			display: flex;
+			gap: 8px;
+			justify-content: flex-end;
+			align-items: center;
+			width: auto;
+		}
+		.file-label {
+			cursor: pointer;
+			padding: 8px 12px;
+			border-radius: 4px;
+			background: #2196F3;
+			color: white;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: background 0.3s;
+			min-width: 40px;
+		}
+		.file-label:hover {
+			background: #1976D2;
+		}
+		.chat-buttons button {
+			padding: 8px 20px;
+			min-width: 120px;
+			background: #2196F3;
+			color: white;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			transition: background 0.3s;
+		}
+		.chat-buttons button:hover {
+			background: #1976D2;
+		}
+		.chat-buttons i {
+			font-size: 1.1em;
+		}
+		.message {
+			margin-bottom: 12px;
+			padding: 10px 15px;
+			border-radius: 15px;
+			max-width: 85%;
+			box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+		}
+		.message.sent {
+			background: #007bff;
+			color: white;
+			margin-left: auto;
+			border-bottom-right-radius: 5px;
+		}
+		.message.received {
+			background: white;
+			border-bottom-left-radius: 5px;
+		}
+		.file-message {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			background: inherit;
+			color: inherit;
+			padding: 5px;
+			border-radius: 4px;
+		}
+		.file-label {
+			cursor: pointer;
+			padding: 8px;
+			border-radius: 4px;
+			background: #f1f1f1;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			min-width: 40px;
+		}
+		.file-label:hover {
+			background: #e1e1e1;
+		}
+		.timestamp {
+			font-size: 12px;
+			color: #666;
+			margin-top: 4px;
+		}
+		.file-progress {
+			background: #f1f1f1;
+			padding: 8px;
+			border-radius: 4px;
+			margin: 8px 0;
+			text-align: center;
+			font-size: 14px;
+		}
+		.resizer {
+			width: 8px;
+			background: transparent;
+			cursor: col-resize;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+		.resizer-line {
+			width: 2px;
+			height: 100%;
+			background: rgba(255, 255, 255, 0.2);
+			transition: background 0.3s;
+		}
+		.resizer:hover .resizer-line {
+			background: rgba(255, 255, 255, 0.5);
+		}
+		.file-message .file-info {
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+		}
+		.file-message .file-name {
+			font-weight: 500;
+			color: inherit;
+		}
+		.file-message .file-size {
+			font-size: 12px;
+			opacity: 0.8;
+		}
+		.file-message i {
+			font-size: 1.2em;
+			width: 24px;
+			height: 24px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		/* 基础响应式设置 */
+		@media (max-width: 768px) { /* 平板和手机 */
+			.container {
+				flex-direction: column;
+			}
+
+			.main-content {
+				min-width: unset;
+				width: 100%;
+				padding: 5px;
+			}
+
+			.video-grid {
+				grid-template-columns: 1fr;
+				height: auto;
+				gap: 5px;
+			}
+
+			.video-container {
+				aspect-ratio: 16/9;
+				height: auto;
+			}
+
+			.controls {
+				flex-wrap: wrap;
+				padding: 8px;
+				gap: 5px;
+			}
+
+			.controls button, 
+			.controls input {
+				flex: 1;
+				min-width: 140px;
+				font-size: 14px;
+				padding: 8px;
+			}
+
+			.chat-container {
+				width: 100%;
+				max-width: 100%;
+				min-width: unset;
+				height: 300px;
+			}
+
+			.resizer {
+				display: none;
+			}
+		}
+
+		@media (max-width: 480px) { /* 手机 */
+			.video-container {
+				height: auto;
+			}
+
+			.controls {
+				margin: 5px;
+			}
+
+			.controls button {
+				padding: 6px 12px;
+				font-size: 12px;
+			}
+
+			.video-label {
+				font-size: 12px;
+				padding: 3px 6px;
+			}
+
+			.chat-container {
+				height: 250px;
+			}
+
+			.chat-input-area {
+				padding: 5px;
+			}
+
+			.chat-buttons button {
+				min-width: 80px;
+				padding: 6px 12px;
+			}
+
+			.message {
+				max-width: 95%;
+				font-size: 14px;
+			}
+		}
+
+		/* 横屏模式优化 */
+		@media (max-width: 768px) and (orientation: landscape) {
+			.container {
+				flex-direction: row;
+				height: 100vh;
+				overflow: hidden;
+			}
+
+			.main-content {
+				flex: 1;
+				min-width: unset;
+				height: 100vh;
+				padding: 5px;
+				display: flex;
+				flex-direction: column;
+				position: relative;
+			}
+
+			.video-grid {
+				grid-template-columns: repeat(2, 1fr);
+				gap: 5px;
+				height: calc(100vh - 60px);
+				margin-bottom: 60px;
+			}
+
+			.video-container {
+				height: 100%;
+				aspect-ratio: unset;
+			}
+
+			.video-container::before {
+				display: none;
+			}
+
+			.video-container video {
+				position: relative;
+				object-fit: contain;
+			}
+
+			.controls {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 200px;
+				background: rgba(255, 255, 255, 0.95);
+				padding: 5px;
+				margin: 0;
+				gap: 5px;
+				height: 50px;
+				z-index: 1000;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+			}
+
+			.controls button,
+			.controls input {
+				padding: 5px 8px;
+				font-size: 12px;
+				height: 30px;
+				min-width: unset;
+				flex: none;
+			}
+
+			.controls input {
+				width: 100px;
+				height: 28px;
+			}
+
+			.controls button i {
+				font-size: 14px;
+				margin-right: 4px;
+			}
+
+			.chat-container {
+				width: 200px;
+				min-width: 200px;
+				height: 100vh;
+				display: flex;
+				flex-direction: column;
+			}
+
+			.chat-messages {
+				flex: 1;
+				padding: 5px;
+			}
+
+			.chat-input-area {
+				padding: 5px;
+				background: white;
+				z-index: 1001;
+			}
+
+			.chat-input-area textarea {
+				min-height: 30px;
+				padding: 5px;
+				font-size: 12px;
+			}
+
+			.chat-buttons {
+				gap: 4px;
+			}
+
+			.chat-buttons button {
+				padding: 4px 8px;
+				min-width: 60px;
+				font-size: 12px;
+			}
+
+			.file-label {
+				padding: 4px;
+			}
+
+			.message {
+				padding: 8px;
+				margin-bottom: 8px;
+				font-size: 12px;
+			}
+
+			/* 优化按钮图标显示 */
+			.controls button i {
+				margin-right: 2px;
+				font-size: 1em;
+			}
+
+			/* 调整视频标签位置和大小 */
+			.video-label {
+				font-size: 10px;
+				padding: 2px 4px;
+			}
+
+			/* 调整全屏按钮 */
+			.fullscreen-btn {
+				padding: 4px;
+				top: 5px;
+				right: 5px;
+			}
+
+			.fullscreen-icon {
+				font-size: 14px;
+			}
+		}
+
+		/* 针对特别矮的横屏设备（如 iPhone SE 横屏） */
+		@media (max-width: 768px) and (orientation: landscape) and (max-height: 400px) {
+			.video-grid {
+				height: calc(100vh - 50px);
+				margin-bottom: 50px;
+			}
+
+			.controls {
+				height: 40px;
+			}
+
+			.controls button,
+			.controls input {
+				height: 28px;
+				padding: 4px 6px;
+				font-size: 11px;
+			}
+
+			.controls button i {
+				font-size: 12px;
+				margin-right: 2px;
+			}
+
+			/* 简化按钮文本 */
+			.controls button span {
+				display: none; /* 在超窄屏幕上只显示图标 */
+			}
+		}
+
+		/* 针对 iPhone X 及以上机型的刘海屏适配 */
+		@supports (padding: max(0px)) {
+			@media (max-width: 768px) and (orientation: landscape) {
+				.controls {
+					padding-bottom: max(5px, env(safe-area-inset-bottom));
+					padding-left: max(5px, env(safe-area-inset-left));
+					padding-right: max(5px, env(safe-area-inset-right));
+					bottom: env(safe-area-inset-bottom);
+				}
+			}
+		}
+
+		/* iPad Pro 优化 */
+		@media (min-width: 769px) and (max-width: 1024px) {
+			.main-content {
+				min-width: 500px;
+			}
+
+			.chat-container {
+				width: 280px;
+			}
+
+			.controls button {
+				font-size: 14px;
+			}
+		}
+
+		/* 确保视频容器在所有设备上都保持合适的比例 */
+		.video-container {
+			position: relative;
+			overflow: hidden;
+		}
+
+		/* 添加视频容器的响应式高度 */
+		@media (max-width: 768px) {
+			.video-container::before {
+				content: "";
+				display: block;
+				padding-top: 56.25%; /* 16:9 比例 */
+			}
+
+			.video-container video {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+			}
+		}
+
+		/* 优化按钮在小屏幕上的显示 */
+		@media (max-width: 480px) {
+			.controls button i {
+				margin-right: 4px;
+			}
+
+			.chat-buttons {
+				gap: 4px;
+			}
+
+			.file-label {
+				padding: 6px;
+			}
+		}
+
+		/* 添加安全区域支持（针对刘海屏手机） */
+		@supports (padding: max(0px)) {
+			.container {
+				padding-left: max(0px, env(safe-area-inset-left));
+				padding-right: max(0px, env(safe-area-inset-right));
+				padding-bottom: max(0px, env(safe-area-inset-bottom));
+			}
+		}
+
+		/* 添加录制按钮样式 */
+		#recordButton.active {
+			background: #dc3545 !important; /* 录制时显示红色 */
+		}
+
+		#recordButton.active i {
+			animation: pulse 1.5s infinite; /* 添加闪烁动画 */
+		}
+
+		@keyframes pulse {
+			0% { opacity: 1; }
+			50% { opacity: 0.5; }
+			100% { opacity: 1; }
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="main-content">
+			<div class="room-info" id="roomInfo" style="display: none;">
+				当前房间: <span id="currentRoom"></span>
+			</div>
+			<div class="video-grid" id="videoGrid">
+				<div class="video-container" id="localVideoContainer">
+					<video id="localVideo" autoplay playsinline muted></video>
+					<div class="video-label">我</div>
+				</div>
+				<div class="video-container" id="remoteVideoContainer">
+					<video id="remoteVideo" autoplay playsinline></video>
+					<div class="video-label">对方</div>
+					<button class="fullscreen-btn" onclick="toggleFullscreen('remoteVideo')">
+						<span class="fullscreen-icon">⛶</span>
+					</button>
+				</div>
+			</div>
+			<div class="controls">
+				<input type="text" id="roomId" placeholder="输入房间ID">
+				<button onclick="joinRoom()">
+					<i class="fas fa-sign-in-alt"></i>
+					加入房间
+				</button>
+				<button id="toggleVideo">
+					<i class="fas fa-video"></i>
+					摄像头
+				</button>
+				<button id="toggleAudio">
+					<i class="fas fa-microphone"></i>
+					麦克风
+				</button>
+				<button id="shareScreen">
+					<i class="fas fa-desktop"></i>
+					共享屏幕
+				</button>
+				<button id="recordButton">
+					<i class="fas fa-record-vinyl"></i>
+					录制
+				</button>
+			</div>
+		</div>
+		<div class="resizer" id="dragHandle">
+			<div class="resizer-line"></div>
+		</div>
+		<div class="chat-container">
+			<div class="chat-messages" id="chatMessages"></div>
+			<div class="chat-input-area">
+				<textarea id="chatInput" placeholder="输入消息..." rows="1"></textarea>
+				<div class="chat-buttons">
+					<label for="fileInput" class="file-label">
+						<i class="fas fa-paperclip"></i>
+					</label>
+					<input type="file" id="fileInput" style="display: none">
+					<button onclick="sendMessage()">
+						<i class="fas fa-paper-plane"></i>
+						发送
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		let peerConnections = {};
+		let localStream;
+		let screenStream;
+		let ws;
+		let currentRoomId;
+		let configuration = null;
+		let dataChannel;
+		let currentFileHandler = null;
+		let mediaRecorder = null;
+		let recordingFileStream = null;
+		let recordingFileHandle = null;
+		let isRecording = false;
+		let audioContext = null;
+		let isClosingRecording = false;
+
+		async function joinRoom() {
+			const roomId = document.getElementById('roomId').value.trim();
+			if (!roomId) {
+				alert('请输入房间ID');
+				return;
+			}
+
+			try {
+				localStream = await navigator.mediaDevices.getUserMedia({
+					video: true,
+					audio: true
+				});
+				
+				addVideoStream('local', localStream);
+				
+				// 更新按钮状态为激活（绿色）
+				const toggleVideo = document.getElementById('toggleVideo');
+				const toggleAudio = document.getElementById('toggleAudio');
+				
+				// 移除灰色状态
+				toggleVideo.classList.remove('inactive');
+				toggleAudio.classList.remove('inactive');
+				
+				// 添加绿色状态
+				toggleVideo.classList.add('active');
+				toggleAudio.classList.add('active');
+				
+				// 更新图标为启用状态
+				toggleVideo.querySelector('i').className = 'fas fa-video';
+				toggleAudio.querySelector('i').className = 'fas fa-microphone';
+				
+				currentRoomId = roomId;
+				document.getElementById('roomInfo').style.display = 'block';
+				document.getElementById('currentRoom').textContent = roomId;
+				
+				document.getElementById('roomId').disabled = true;
+				document.querySelector('button[onclick="joinRoom()"]').disabled = true;
+				
+				connectToRoom();
+			} catch (err) {
+				console.error('获取媒体设备失败:', err);
+				alert('无法访问摄像头或麦克风');
+			}
+		}
+
+		function connectToRoom() {
+			ws = new WebSocket(`wss://${window.location.host}/ws`);
+
+			ws.onopen = () => {
+				sendToServer({
+					type: 'join',
+					roomId: currentRoomId
+				});
+			};
+
+			ws.onmessage = async (event) => {
+				const message = JSON.parse(event.data);
+				console.log('Received message:', message);
+
+				if (message.type === 'ice_config') {
+					configuration = {
+						iceServers: message.data
+					};
+					console.log('Received ICE configuration:', configuration);
+				} else if (message.type === 'room_status') {
+					handleRoomStatus(message);
+				} else if (message.type === 'signal') {
+					const signalData = JSON.parse(message.data);
+					
+					handleSignalingMessage(signalData);
+				}
+			};
+
+			ws.onerror = (error) => {
+				console.error('WebSocket error:', error);
+			};
+
+			ws.onclose = () => {
+				console.log('WebSocket connection closed');
+			};
+		}
+
+		async function createPeerConnection(userId) {
+			if (!configuration) {
+				throw new Error('ICE configuration not received yet');
+			}
+
+			if (peerConnections[userId]) {
+				peerConnections[userId].close();
+			}
+			
+			console.log('Creating peer connection with config:', configuration);
+			const pc = new RTCPeerConnection(configuration);
+			peerConnections[userId] = pc;
+			
+			if (localStream) {
+				localStream.getTracks().forEach(track => {
+					console.log('Adding track to peer connection:', track.kind);
+					pc.addTrack(track, localStream);
+				});
+			}
+			
+			pc.ontrack = (event) => {
+				console.log('Received remote track:', event.track.kind);
+				const stream = event.streams[0];
+				if (stream) {
+					addVideoStream('remote', stream);
+				}
+			};
+			
+			pc.onicecandidate = (event) => {
+				if (event.candidate) {
+					console.log('Sending ICE candidate');
+					sendToServer({
+						type: 'signal',
+						data: JSON.stringify({
+							type: 'candidate',
+							candidate: event.candidate
+						})
+					});
+				}
+			};
+			
+			pc.onconnectionstatechange = () => {
+				console.log('Connection state changed:', pc.connectionState);
+				if (pc.connectionState === 'connected') {
+					console.log('Peers connected!');
+				}
+			};
+			
+			pc.oniceconnectionstatechange = () => {
+				console.log('ICE connection state changed:', pc.iceConnectionState);
+			};
+			
+			// 创建数据通道
+			if (!dataChannel) {
+				dataChannel = pc.createDataChannel('chat');
+				setupDataChannel(dataChannel);
+			}
+			
+			pc.ondatachannel = (event) => {
+				dataChannel = event.channel;
+				setupDataChannel(dataChannel);
+			};
+			
+			return pc;
+		}
+
+		async function handleOffer(data) {
+			console.log('Handling offer from peer');
+			const pc = await createPeerConnection('remote');
+			
+			try {
+				await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+				const answer = await pc.createAnswer();
+				await pc.setLocalDescription(answer);
+				
+				sendToServer({
+					type: 'signal',
+					data: JSON.stringify({
+						type: 'answer',
+						answer: answer
+					})
+				});
+			} catch (e) {
+				console.error('Error handling offer:', e);
+			}
+		}
+
+		async function handleAnswer(data) {
+			console.log('Handling answer');
+			const pc = peerConnections['remote'];
+			if (pc) {
+				try {
+					await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+				} catch (e) {
+					console.error('Error handling answer:', e);
+				}
+			}
+		}
+
+		async function handleCandidate(data) {
+			console.log('Handling ICE candidate');
+			const pc = peerConnections['remote'];
+			if (pc) {
+				try {
+					await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+				} catch (e) {
+					console.error('Error handling ICE candidate:', e);
+				}
+			}
+		}
+
+		function handleRoomStatus(message) {
+			const status = message.data;
+			console.log('Room status:', status);
+			
+			if (status.count === 2) {
+				if (!peerConnections['remote']) {
+					console.log('Initiating connection as first peer');
+					setTimeout(() => {
+						initiateConnection();
+					}, 1000);
+				}
+			}
+		}
+
+		async function initiateConnection() {
+			console.log('Initiating connection as peer');
+			const pc = await createPeerConnection('remote');
+			
+			try {
+				const offer = await pc.createOffer();
+				await pc.setLocalDescription(offer);
+				
+				sendToServer({
+					type: 'signal',
+					data: JSON.stringify({
+						type: 'offer',
+						offer: offer
+					})
+				});
+			} catch (e) {
+				console.error('Error creating offer:', e);
+			}
+		}
+
+		function addVideoStream(userId, stream) {
+			console.log('Adding video stream for:', userId);
+			const videoElement = userId === 'local' ? 
+				document.getElementById('localVideo') : 
+				document.getElementById('remoteVideo');
+			
+			if (videoElement) {
+				if (videoElement.srcObject !== stream) {
+					videoElement.srcObject = stream;
+					videoElement.onloadedmetadata = () => {
+						videoElement.play().catch(e => console.error('播放视频失败:', e));
+					};
+				}
+			}
+		}
+
+		function sendToServer(message) {
+			if (!message.roomId) {
+				message.roomId = currentRoomId;
+			}
+			console.log('Sending message:', message);
+			ws.send(JSON.stringify(message));
+		}
+
+		async function handleSignalingMessage(data) {
+			console.log('Handling signaling message:', data);
+			
+			switch(data.type) {
+				case 'offer':
+					console.log('Received offer from:', data.userId);
+					await handleOffer(data);
+					break;
+				case 'answer':
+					console.log('Received answer from:', data.userId);
+					await handleAnswer(data);
+					break;
+				case 'candidate':
+					console.log('Received ICE candidate from:', data.userId);
+					await handleCandidate(data);
+					break;
+				case 'join':
+					console.log('New user joined:', data.userId);
+					break;
+			}
+		}
+
+		// 修改控制按钮事件
+		document.getElementById('toggleVideo').addEventListener('click', () => {
+			const videoTrack = localStream.getVideoTracks()[0];
+			videoTrack.enabled = !videoTrack.enabled;
+			const btn = document.getElementById('toggleVideo');
+			if (videoTrack.enabled) {
+				btn.classList.remove('inactive');
+				btn.classList.add('active');
+				btn.querySelector('i').className = 'fas fa-video';
+			} else {
+				btn.classList.remove('active');
+				btn.classList.add('inactive');
+				btn.querySelector('i').className = 'fas fa-video-slash';
+			}
+		});
+
+		document.getElementById('toggleAudio').addEventListener('click', () => {
+			const audioTrack = localStream.getAudioTracks()[0];
+			audioTrack.enabled = !audioTrack.enabled;
+			const btn = document.getElementById('toggleAudio');
+			if (audioTrack.enabled) {
+				btn.classList.remove('inactive');
+				btn.classList.add('active');
+				btn.querySelector('i').className = 'fas fa-microphone';
+			} else {
+				btn.classList.remove('active');
+				btn.classList.add('inactive');
+				btn.querySelector('i').className = 'fas fa-microphone-slash';
+			}
+		});
+
+		// 修改共享屏幕按钮事件
+		document.getElementById('shareScreen').addEventListener('click', async () => {
+			const btn = document.getElementById('shareScreen');
+			try {
+				if (!screenStream) {
+					screenStream = await navigator.mediaDevices.getDisplayMedia({
+						video: true
+					});
+					
+					const videoTrack = screenStream.getVideoTracks()[0];
+					
+					Object.values(peerConnections).forEach(pc => {
+						const sender = pc.getSenders().find(s => s.track.kind === 'video');
+						sender.replaceTrack(videoTrack);
+					});
+
+					videoTrack.onended = stopScreenSharing;
+					
+					btn.classList.remove('inactive');
+					btn.classList.add('active');
+					btn.querySelector('i').className = 'fas fa-stop-circle';
+				} else {
+					stopScreenSharing();
+				}
+			} catch (err) {
+				console.error('共享屏幕失败:', err);
+				btn.classList.remove('active');
+				btn.classList.add('inactive');
+			}
+		});
+
+		function stopScreenSharing() {
+			if (screenStream) {
+				screenStream.getTracks().forEach(track => track.stop());
+				screenStream = null;
+
+				const videoTrack = localStream.getVideoTracks()[0];
+				Object.values(peerConnections).forEach(pc => {
+					const sender = pc.getSenders().find(s => s.track.kind === 'video');
+					sender.replaceTrack(videoTrack);
+				});
+
+				const btn = document.getElementById('shareScreen');
+				btn.classList.remove('active');
+				btn.querySelector('i').className = 'fas fa-desktop';
+			}
+		}
+
+		// 清理资源
+		window.onbeforeunload = () => {
+			if (localStream) {
+				localStream.getTracks().forEach(track => track.stop());
+			}
+			if (screenStream) {
+				screenStream.getTracks().forEach(track => track.stop());
+			}
+			Object.values(peerConnections).forEach(pc => pc.close());
+			if (ws) {
+				ws.close();
+			}
+		};
+
+		function toggleFullscreen(videoId) {
+			const video = document.getElementById(videoId);
+			
+			if (!document.fullscreenElement) {
+				if (video.requestFullscreen) {
+					video.requestFullscreen();
+				} else if (video.webkitRequestFullscreen) { // Safari
+					video.webkitRequestFullscreen();
+				} else if (video.msRequestFullscreen) { // IE11
+					video.msRequestFullscreen();
+				}
+			} else {
+				if (document.exitFullscreen) {
+					document.exitFullscreen();
+				} else if (document.webkitExitFullscreen) { // Safari
+					document.webkitExitFullscreen();
+				} else if (document.msExitFullscreen) { // IE11
+					document.msExitFullscreen();
+				}
+			}
+		}
+
+		// 设置数据通道
+		function setupDataChannel(channel) {
+			channel.onopen = () => {
+				console.log('Data channel is open');
+			};
+			
+			channel.onmessage = (event) => {
+				// 如果是 ArrayBuffer，说明是文件数据
+				if (event.data instanceof ArrayBuffer) {
+					// 直接传递给当前的文件处理函数
+					if (currentFileHandler) {
+						currentFileHandler(event.data);
+					}
+					return;
+				}
+
+				// 否则尝试解析为 JSON
+				try {
+					const data = JSON.parse(event.data);
+					console.log('Received data channel message:', data);
+					
+					if (data.type === 'chat') {
+						addChatMessage(data, false);
+					} else if (data.type === 'file') {
+						handleFileReceived(data);
+					}
+				} catch (e) {
+					console.error('Error processing message:', e);
+					addChatMessage({
+						message: event.data,
+						timestamp: new Date().toISOString()
+					}, false);
+				}
+			};
+
+			channel.onerror = (error) => {
+				console.error('Data channel error:', error);
+			};
+
+			channel.onclose = () => {
+				console.log('Data channel closed');
+			};
+		}
+
+		// 发送聊天消息
+		function sendMessage() {
+			const input = document.getElementById('chatInput');
+			const message = input.value.trim();
+			
+			if (message && dataChannel && dataChannel.readyState === 'open') {
+				const messageData = {
+					type: 'chat',
+					message: message,
+					timestamp: new Date().toISOString()
+				};
+				
+				dataChannel.send(JSON.stringify(messageData));
+				addChatMessage(messageData, true);
+				input.value = '';
+			}
+		}
+
+		// 添加聊天消息到界面
+		function addChatMessage(data, isSent) {
+			const messagesDiv = document.getElementById('chatMessages');
+			const messageDiv = document.createElement('div');
+			messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+			
+			// 确保使用正确的消息内容
+			const messageContent = typeof data === 'string' ? data : data.message;
+			const timestamp = data.timestamp ? new Date(data.timestamp) : new Date();
+			const time = timestamp.toLocaleTimeString();
+			
+			messageDiv.innerHTML = `
+				<div class="message-content">${messageContent}</div>
+				<div class="timestamp">${time}</div>
+			`;
+			
+			messagesDiv.appendChild(messageDiv);
+			messagesDiv.scrollTop = messagesDiv.scrollHeight;
+		}
+
+		// 修改文件发送部分
+		document.getElementById('fileInput').addEventListener('change', async (e) => {
+			const file = e.target.files[0];
+			if (!file || !dataChannel || dataChannel.readyState !== 'open') return;
+			
+			try {
+				// 发送文件信息
+				const fileInfo = {
+					type: 'file',
+					name: file.name,
+					size: file.size,
+					timestamp: new Date().toISOString()
+				};
+				
+				dataChannel.send(JSON.stringify(fileInfo));
+				addFileMessage(fileInfo, true);
+				
+				// 分块读取并发送文件
+				const chunkSize = 16384; // 16KB
+				const reader = new FileReader();
+				let offset = 0;
+				
+				// 添加流量控制
+				const waitForBuffer = () => {
+					return new Promise(resolve => {
+						const checkBuffer = () => {
+							if (dataChannel.bufferedAmount <= dataChannel.bufferedAmountLowThreshold) {
+								resolve();
+							} else {
+								setTimeout(checkBuffer, 100);
+							}
+						};
+						checkBuffer();
+					});
+				};
+				
+				reader.onload = async (e) => {
+					// 等待缓冲区清空
+					await waitForBuffer();
+					dataChannel.send(e.target.result);
+					offset += e.target.result.byteLength;
+					
+					if (offset < file.size) {
+						// 继续读取下一块
+						readNextChunk();
+					}
+				};
+				
+				function readNextChunk() {
+					const slice = file.slice(offset, offset + chunkSize);
+					reader.readAsArrayBuffer(slice);
+				}
+				
+				// 设置缓冲区阈值
+				dataChannel.bufferedAmountLowThreshold = 65535; // 64KB
+				
+				// 开始读取第一块
+				readNextChunk();
+				
+			} catch (err) {
+				console.error('Error sending file:', err);
+			}
+		});
+
+		// 修改文件接收处理
+		function handleFileReceived(fileInfo) {
+			addFileMessage(fileInfo, false);
+			
+			const chunks = [];
+			let receivedSize = 0;
+			
+			// 创建进度显示元素
+			const progressDiv = document.createElement('div');
+			progressDiv.className = 'file-progress';
+			document.getElementById('chatMessages').appendChild(progressDiv);
+			
+			// 设置当前文件处理函数
+			currentFileHandler = (data) => {
+				chunks.push(data);
+				receivedSize += data.byteLength;
+				
+				// 更新进度
+				const progress = Math.round((receivedSize / fileInfo.size) * 100);
+				progressDiv.textContent = `接收进度: ${progress}%`;
+				
+				if (receivedSize >= fileInfo.size) {
+					// 接收完成，创建下载链接
+					const blob = new Blob(chunks);
+					const downloadUrl = URL.createObjectURL(blob);
+					const a = document.createElement('a');
+					a.href = downloadUrl;
+					a.download = fileInfo.name;
+					a.click();
+					
+					// 清理资源
+					URL.revokeObjectURL(downloadUrl);
+					currentFileHandler = null;
+					chunks.length = 0;
+					progressDiv.remove();
+				}
+			};
+		}
+
+		// 显示文件消息
+		function addFileMessage(fileInfo, isSent) {
+			const messagesDiv = document.getElementById('chatMessages');
+			const messageDiv = document.createElement('div');
+			messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+			
+			const time = new Date(fileInfo.timestamp).toLocaleTimeString();
+			const size = (fileInfo.size / 1024).toFixed(2) + ' KB';
+			
+			messageDiv.innerHTML = `
+				<div class="file-message">
+					<i class="fas fa-file"></i>
+					<div class="file-info">
+						<div class="file-name">${fileInfo.name}</div>
+						<div class="file-size">${size}</div>
+					</div>
+				</div>
+				<div class="timestamp">${time}</div>
+			`;
+			
+			messagesDiv.appendChild(messageDiv);
+			messagesDiv.scrollTop = messagesDiv.scrollHeight;
+		}
+
+		// 修改回车发送功能
+		document.getElementById('chatInput').addEventListener('keydown', (e) => {
+			if (e.key === 'Enter' && !e.shiftKey) {
+				e.preventDefault(); // 阻止默认的换行行为
+				sendMessage();
+			}
+		});
+
+		// 自动调整文本框高度
+		document.getElementById('chatInput').addEventListener('input', function() {
+			this.style.height = 'auto';
+			this.style.height = (this.scrollHeight) + 'px';
+		});
+
+		// 添加拖拽功能
+		const resizer = document.getElementById('dragHandle');
+		const chatContainer = document.querySelector('.chat-container');
+		let isResizing = false;
+		let startX;
+		let startWidth;
+
+		resizer.addEventListener('mousedown', initResize);
+
+		function initResize(e) {
+			isResizing = true;
+			startX = e.clientX;
+			startWidth = parseInt(getComputedStyle(chatContainer).width, 10);
+
+			// 添加事件监听器
+			document.addEventListener('mousemove', resize);
+			document.addEventListener('mouseup', stopResize);
+
+			// 添加调整时的视觉反馈
+			document.body.style.cursor = 'col-resize';
+			resizer.classList.add('active');
+		}
+
+		function resize(e) {
+			if (!isResizing) return;
+
+			const diff = startX - e.clientX;
+			const newWidth = Math.min(Math.max(250, startWidth + diff), window.innerWidth * 0.5);
+			chatContainer.style.width = `${newWidth}px`;
+		}
+
+		function stopResize() {
+			isResizing = false;
+			document.removeEventListener('mousemove', resize);
+			document.removeEventListener('mouseup', stopResize);
+			
+			// 移除视觉反馈
+			document.body.style.cursor = '';
+			resizer.classList.remove('active');
+		}
+
+		// 防止文本选择
+		resizer.addEventListener('selectstart', (e) => e.preventDefault());
+
+		// 在 script 标签最后添加初始化函数
+		function initializeButtonStates() {
+			// 初始状态下，加入房间按钮是蓝色的，其他按钮是灰色的
+			const toggleVideo = document.getElementById('toggleVideo');
+			const toggleAudio = document.getElementById('toggleAudio');
+			const shareScreen = document.getElementById('shareScreen');
+			
+			// 设置媒体控制按钮为灰色
+			toggleVideo.classList.add('inactive');
+			toggleAudio.classList.add('inactive');
+			shareScreen.classList.add('inactive');
+			
+			// 更新图标
+			toggleVideo.querySelector('i').className = 'fas fa-video-slash';
+			toggleAudio.querySelector('i').className = 'fas fa-microphone-slash';
+		}
+
+		// 在页面加载完成后初始化按钮状态
+		document.addEventListener('DOMContentLoaded', initializeButtonStates);
+
+		// 添加录制功能
+		document.getElementById('recordButton').addEventListener('click', async () => {
+			const btn = document.getElementById('recordButton');
+			
+			if (!isRecording && !isClosingRecording) {
+				try {
+					// 先获取文件句柄
+					recordingFileHandle = await window.showSaveFilePicker({
+						suggestedName: `会议录制_${new Date().toISOString().slice(0,19).replace(/[:-]/g, '')}.webm`,
+						types: [{
+							description: 'WebM Video File',
+							accept: {
+								'video/webm': ['.webm']
+							}
+						}]
+					});
+					
+					// 创建可写流
+					recordingFileStream = await recordingFileHandle.createWritable();
+					
+					// 创建画布和上下文
+					const canvas = document.createElement('canvas');
+					const ctx = canvas.getContext('2d');
+					const localVideo = document.getElementById('localVideo');
+					const remoteVideo = document.getElementById('remoteVideo');
+					
+					canvas.width = 1920;
+					canvas.height = 1080;
+					
+					// 创建合成流
+					const stream = canvas.captureStream(30);
+					
+					// 创建音频上下文和合并节点
+					audioContext = new AudioContext();
+					const destination = audioContext.createMediaStreamDestination();
+					
+					// 添加音频轨道
+					if (localStream && localStream.getAudioTracks().length > 0) {
+						const localAudioSource = audioContext.createMediaStreamSource(localStream);
+						localAudioSource.connect(destination);
+					}
+					
+					if (remoteVideo.srcObject && remoteVideo.srcObject.getAudioTracks().length > 0) {
+						const remoteAudioSource = audioContext.createMediaStreamSource(remoteVideo.srcObject);
+						remoteAudioSource.connect(destination);
+					}
+					
+					destination.stream.getAudioTracks().forEach(track => {
+						stream.addTrack(track);
+					});
+					
+					// 创建 MediaRecorder
+					mediaRecorder = new MediaRecorder(stream, {
+						mimeType: 'video/webm;codecs=vp8,opus',
+						audioBitsPerSecond: 128000,
+						videoBitsPerSecond: 3000000
+					});
+					
+					// 处理录制数据
+					mediaRecorder.ondataavailable = async (event) => {
+						if (!isRecording || !recordingFileStream) return;
+						
+						if (event.data.size > 0) {
+							try {
+								await recordingFileStream.write(event.data);
+							} catch (err) {
+								console.error('写入录制数据失败:', err);
+								await stopRecording();
+							}
+						}
+					};
+					
+					// 停止录制时的处理
+					mediaRecorder.onstop = async () => {
+						if (!isClosingRecording) {
+							await cleanupRecording();
+						}
+					};
+					
+					// 开始录制
+					mediaRecorder.start(1000);
+					isRecording = true;
+					
+					// 更新按钮状态
+					btn.classList.remove('inactive');
+						btn.classList.add('active');
+						btn.innerHTML = '<i class="fas fa-stop"></i> 停止录制';
+					
+					// 开始绘制视频帧
+					function drawFrame() {
+						if (!isRecording) return;
+						
+						ctx.fillStyle = '#000';
+						ctx.fillRect(0, 0, canvas.width, canvas.height);
+						
+						const width = canvas.width / 2;
+						const height = (width * 9) / 16;
+						const y = (canvas.height - height) / 2;
+						
+						ctx.drawImage(localVideo, 0, y, width, height);
+						
+						if (remoteVideo.srcObject) {
+							ctx.drawImage(remoteVideo, width, y, width, height);
+						}
+						
+						requestAnimationFrame(drawFrame);
+					}
+					
+					drawFrame();
+					
+				} catch (err) {
+					console.error('录制失败:', err);
+					alert('无法开始录制');
+					await stopRecording();
+				}
+			} else if (!isClosingRecording) {
+				await stopRecording();
+			}
+		});
+
+		// 修改停止录制函数
+		async function stopRecording() {
+			if (!isRecording || isClosingRecording) return;
+			
+			isClosingRecording = true;
+			isRecording = false;
+			
+			try {
+				if (mediaRecorder && mediaRecorder.state === 'recording') {
+					mediaRecorder.stop();
+				}
+				
+				await cleanupRecording();
+			} catch (err) {
+				console.error('停止录制失败:', err);
+			} finally {
+				isClosingRecording = false;
+			}
+		}
+
+		// 修改清理资源函数
+		async function cleanupRecording() {
+			try {
+				// 按顺序关闭资源
+				if (mediaRecorder) {
+					mediaRecorder = null;
+				}
+				
+				if (audioContext) {
+					try {
+						await audioContext.close();
+					} catch (err) {
+						console.warn('关闭音频上下文失败:', err);
+					}
+					audioContext = null;
+				}
+				
+				if (recordingFileStream) {
+					try {
+						// 检查流的状态
+						if (!recordingFileStream.locked && recordingFileStream.writable) {
+							await recordingFileStream.close();
+						}
+					} catch (err) {
+						console.warn('关闭文件流失败:', err);
+					}
+					recordingFileStream = null;
+				}
+				
+				if (recordingFileHandle) {
+					recordingFileHandle = null;
+				}
+				
+				// 更新按钮状态
+				const btn = document.getElementById('recordButton');
+				btn.classList.remove('active');
+				btn.classList.add('inactive');
+				btn.innerHTML = '<i class="fas fa-record-vinyl"></i> 录制';
+				
+			} catch (err) {
+				console.error('清理录制资源失败:', err);
+			}
+		}
+	</script>
+</body>
+</html>
